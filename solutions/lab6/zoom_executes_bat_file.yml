@@ -1,0 +1,19 @@
+title: Zoom executes bat file
+id: 556e9782-4c46-4348-a51e-ec882c317523
+status: test
+description: Detects execution of Zoom.exe to execute a bat file.
+author: Patrick Bareiss
+date: 2025-07-14
+tags:
+    - attack.execution
+    - attack.t1204.002
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        - ParentCommandLine|contains: 'ZoomInstaller'
+        - CommandLine|contains: '.bat'
+    condition: selection
+falsepositives: unknown
+level: medium

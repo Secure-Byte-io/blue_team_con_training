@@ -1,0 +1,19 @@
+title: regsvr32 execute dll
+id: 9ff809ba-32d5-4844-8262-881fec41b44e
+status: test
+description: Detects execution of regsvr32.exe to execute a DLL file.
+author: Patrick Bareiss
+date: 2025-07-14
+tags:
+    - attack.execution
+    - attack.t1204.002
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        - Image|endswith: '\regsvr32.exe'
+        - CommandLine|contains: '.dll'
+    condition: selection
+falsepositives: unknown
+level: medium
