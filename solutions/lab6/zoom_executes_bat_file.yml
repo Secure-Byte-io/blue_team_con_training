@@ -15,5 +15,6 @@ detection:
         - ParentCommandLine|contains: 'ZoomInstaller'
         - CommandLine|contains: '.bat'
     condition: selection
-falsepositives: unknown
+falsepositives: 
+- unknown
 level: medium
