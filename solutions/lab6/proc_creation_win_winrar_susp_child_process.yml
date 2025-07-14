@@ -18,7 +18,9 @@ logsource:
     product: windows
 detection:
     selection_parent:
-        ParentImage|endswith: '\WinRAR.exe'
+        ParentImage|endswith: 
+        - '\WinRAR.exe'
+        - '\rar.exe'
     selection_binaries:
         # Note: add additional binaries that the attacker might use
         - Image|endswith:
