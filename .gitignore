@@ -1,1 +1,15 @@
 .DS_Store
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+virtualenv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python

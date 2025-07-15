@@ -1,0 +1,21 @@
+title: WinRAR Execution
+id: 8a3f8d44-195a-4996-baac-4d3991d64094
+status: test
+description: Detects execution of WinRAR from command line.
+author: Patrick Bareiss
+date: 2025-07-14
+tags:
+    - attack.execution
+    - attack.t1203
+detection:
+    selection:
+        Image|endswith: 
+        - '\WinRAR.exe'
+        - '\rar.exe'
+    selection_parent:
+        - ParentImage|endswith:
+              - '\cmd.exe'
+    condition: selection and selection_parent
+falsepositives:
+    - Unknown
+level: medium
