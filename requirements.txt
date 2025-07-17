@@ -1,0 +1,6 @@
+sigma-cli
+PyYAML>=6.0
+splunk-sdk>=1.6.0
+requests>=2.28.0
+urllib3>=1.26.0
+
