@@ -6,6 +6,15 @@ on:
     types:
       - completed
   workflow_dispatch:
+    inputs:
+      skip_validation:
+        description: 'Skip validation and run tests directly'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 jobs:
   test:
