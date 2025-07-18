@@ -204,7 +204,7 @@ Note: Attack data is automatically sent and cleaned up for each detection.
             
             # Test the detection
             if test_detection(detection_manager, detection_data, file_name, 
-                            yaml_file, args.no_cleanup):
+                              yaml_file, args.no_cleanup):
                 successful_tests += 1
             else:
                 failed_tests += 1
@@ -217,7 +217,7 @@ Note: Attack data is automatically sent and cleaned up for each detection.
         print(f"Successful: {successful_tests}")
         print(f"Failed: {failed_tests}")
         success_rate = (successful_tests/len(yaml_files)*100 
-                       if yaml_files else 0)
+                        if yaml_files else 0)
         print(f"Success rate: {success_rate:.1f}%")
         
         # Note about cleanup

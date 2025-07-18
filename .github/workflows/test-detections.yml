@@ -1,0 +1,77 @@
+name: Test Detection Rules
+
+on:
+  workflow_run:
+    workflows: ["Validate Detection Rules"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # Only run if validation passed OR if manually triggered with skip_validation
+    if: |
+      github.event.workflow_run.conclusion == 'success' || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.skip_validation == 'true')
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install PyYAML>=6.0 splunk-sdk>=1.6.0 requests>=2.28.0 urllib3>=1.26.0 pysigma pysigma-backend-splunk
+        
+    - name: Copy required files
+      run: |
+        # Copy detection_testing_manager.py to current directory for import
+        cp solutions/lab9/detection_testing_manager.py .
+        
+    - name: Test detection rules
+      env:
+        SPLUNK_HOST: ${{ secrets.SPLUNK_HOST }}
+        SPLUNK_USERNAME: ${{ secrets.SPLUNK_USERNAME }}
+        SPLUNK_PASSWORD: ${{ secrets.SPLUNK_PASSWORD }}
+      run: |
+        # Check if Splunk environment variables are set
+        if [ -z "$SPLUNK_HOST" ] || [ -z "$SPLUNK_USERNAME" ] || [ -z "$SPLUNK_PASSWORD" ]; then
+          echo "❌ Missing required Splunk environment variables."
+          echo "Please set the following secrets in your repository:"
+          echo "  - SPLUNK_HOST"
+          echo "  - SPLUNK_USERNAME" 
+          echo "  - SPLUNK_PASSWORD"
+          echo ""
+          echo "Skipping detection testing..."
+          exit 0
+        fi
+        
+        echo "🧪 Running detection tests..."
+        python solutions/lab9/test_detections.py detections
+        
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results-${{ github.run_number }}
+        path: |
+          detections/
+        retention-days: 30
+        
+    - name: Comment on PR
+      if: github.event_name == 'pull_request' && failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '❌ Detection tests failed. Please check the test results artifact for details.'
+          }) 
