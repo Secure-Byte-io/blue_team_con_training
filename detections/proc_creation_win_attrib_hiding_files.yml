@@ -34,3 +34,4 @@ level: medium
 data: Sysmon.xml
 source: Sysmon
 sourcetype: XmlWinEventLog
+
