@@ -5,6 +5,11 @@ on:
     types: [opened, reopened, synchronize]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -63,9 +68,14 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '❌ Detection tests failed. Please check the test results artifact for details.'
-          }) 
+          try {
+            await github.rest.issues.createComment({
+              issue_number: context.payload.pull_request.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Detection tests failed. Please check the test results artifact for details.'
+            });
+          } catch (error) {
+            console.log('Could not create comment (likely due to permissions):', error.message);
+            console.log('This is expected when running on forks or with limited permissions.');
+          } 
