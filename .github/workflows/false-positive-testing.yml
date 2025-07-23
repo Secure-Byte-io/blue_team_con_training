@@ -1,8 +1,10 @@
 name: False Positive Testing
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
+  workflow_run:
+    workflows: ["Test Detection Rules"]
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
@@ -13,6 +15,7 @@ permissions:
 jobs:
   false-positive-test:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     
     steps:
     - name: Checkout repository
@@ -65,17 +68,28 @@ jobs:
         retention-days: 30
         
     - name: Comment on PR
-      if: github.event_name == 'pull_request' && failure()
+      if: failure() && github.event.workflow_run.event == 'pull_request'
       uses: actions/github-script@v6
       with:
         script: |
           try {
-            await github.rest.issues.createComment({
-              issue_number: context.payload.pull_request.number,
+            // Get the PR number from the triggering workflow
+            const pullRequests = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '❌ False positive tests failed. Some detections triggered false positives. Please check the test results artifact for details.'
+              head: `${context.repo.owner}:${github.event.workflow_run.head_branch}`,
+              state: 'open'
             });
+            
+            if (pullRequests.data.length > 0) {
+              const prNumber = pullRequests.data[0].number;
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '❌ False positive tests failed. Some detections triggered false positives. Please check the test results artifact for details.'
+              });
+            }
           } catch (error) {
             console.log('Could not create comment (likely due to permissions):', error.message);
             console.log('This is expected when running on forks or with limited permissions.');
