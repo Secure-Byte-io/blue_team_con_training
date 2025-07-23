@@ -12,8 +12,8 @@ logsource:
     product: windows
 detection:
     selection:
-        - Image|endswith: '\regsvr32.exe'
-        - CommandLine|contains: '.dll'
+        Image|endswith: '\regsvr32.exe'
+        CommandLine|contains: '.dll'
     condition: selection
 falsepositives: 
 - unknown
