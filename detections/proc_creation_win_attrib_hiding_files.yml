@@ -1,6 +1,6 @@
 title: Hiding Files with Attrib.exe
 id: 4281cb20-2994-4580-aa63-c8b86d019934
-status: test
+status: stable
 description: Detects usage of attrib.exe to hide files from users.
 references:
     - https://unit42.paloaltonetworks.com/unit42-sure-ill-take-new-combojack-malware-alters-clipboards-steal-cryptocurrency/
