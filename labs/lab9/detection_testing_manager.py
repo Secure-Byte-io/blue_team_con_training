@@ -1,4 +1,3 @@
-import uuid
 import urllib
 import requests
 import json
@@ -13,13 +12,14 @@ from sigma.backends.splunk import SplunkBackend
 
 class DetectionTestingManager:
 
-    def __init__(self, host, username, password):
+    def __init__(self, host, username, password, hec_token):
         self.conn = client.connect(
             host=host,
             port=8089,
             username=username,
             password=password,
         )
+        self.hec_token = hec_token
 
     def sigma_to_splunk_conversion(self, sigma_detection: dict):
         sigma_collection = SigmaCollection.from_dicts([sigma_detection])
@@ -27,57 +27,31 @@ class DetectionTestingManager:
         splunk_search = splunk_backend.convert(sigma_collection)[0]
         return splunk_search
 
-    def configure_hec(self):
-        self.hec_channel = str(uuid.uuid4())
-        try:
-            res = self.conn.input(
-                path="/servicesNS/nobody/splunk_httpinput/data/inputs/http/"
-                     "http:%2F%2FDETECTION_TESTING_HEC"
-            )
-            self.hec_token = str(res.token)
-            return
-        except Exception:
-            pass
-
-        try:
-            res = self.conn.inputs.create(
-                name="DETECTION_TESTING_HEC",
-                kind="http",
-                index="test",
-                indexes="test",
-                useACK=True,
-            )
-            self.hec_token = str(res.token)
-            return
-
-        except Exception:
-            pass
-
     def send_attack_data(
         self,
         file_path: str,
         source: str,
         sourcetype: str,
-        host: str,
+        splunk_host: str,
+        event_host: str = "test",
         verify_ssl: bool = False,
     ):
         if verify_ssl is False:
             disable_warnings()
 
         headers = {
-            "Authorization": f"Splunk {self.hec_token}",  
-            "X-Splunk-Request-Channel": self.hec_channel,
+            "Authorization": f"Splunk {self.hec_token}",
         }
 
         url_params = {
             "index": "test",
             "source": source,
             "sourcetype": sourcetype,
-            "host": "test",
+            "host": event_host,
         }
 
         url = urllib.parse.urljoin(
-            f"https://{host}:8088",
+            f"https://{splunk_host}:8088",
             "services/collector/raw"
         )
 
@@ -91,68 +65,15 @@ class DetectionTestingManager:
                     headers=headers,
                     verify=verify_ssl,
                 )
-                jsonResponse = json.loads(res.text)
+                
+                # Check if request was successful
+                res.raise_for_status()
+                
+                # For basic HEC without acknowledgments, success response is typically {"text":"Success","code":0}
+                return
 
             except Exception as e:
-                raise (
-                    Exception(
-                        f"There was an exception sending attack_data to HEC: {str(e)}"
-                    )
-                )
-
-        if "ackId" not in jsonResponse:
-            raise (
-                Exception(
-                    f"key 'ackID' not present in response from HEC server: "
-                    f"{jsonResponse}"
-                )
-            )
-
-        ackId = jsonResponse["ackId"]
-        url_with_hec_ack_path = urllib.parse.urljoin(
-            f"https://{host}:8088", "services/collector/ack"
-        )
-
-        requested_acks = {"acks": [jsonResponse["ackId"]]}
-        attempt_count = 0
-        max_attempts = 10
-        
-        while attempt_count < max_attempts:
-            try:
-                res = requests.post(
-                    url_with_hec_ack_path,
-                    json=requested_acks,
-                    allow_redirects=True,
-                    headers=headers,
-                    verify=verify_ssl,
-                )
-
-                jsonResponse = json.loads(res.text)
-
-                if "acks" in jsonResponse and str(ackId) in jsonResponse["acks"]:
-                    if jsonResponse["acks"][str(ackId)] is True:
-                        # ackID has been found for our request, 
-                        # we can return as the data has been replayed
-                        return
-                    else:
-                        # ackID is not yet true, we will wait some more
-                        attempt_count += 1
-                        if attempt_count < max_attempts:
-                            time.sleep(2)
-
-                else:
-                    raise (
-                        Exception(
-                            f"Proper ackID structure not found for ackID {ackId} "
-                            f"in {jsonResponse}"
-                        )
-                    )
-            except Exception as e:
-                raise (Exception(f"There was an exception in the post: {str(e)}"))
-        
-        raise Exception(
-            f"Failed to receive HEC acknowledgment after {max_attempts} attempts"
-        )
+                raise Exception(f"There was an exception sending attack_data to HEC: {str(e)}")
     
     def delete_attack_data(self):
         index = "test"

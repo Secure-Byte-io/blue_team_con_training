@@ -11,7 +11,7 @@ from detection_testing_manager import DetectionTestingManager
 
 def load_environment_variables():
     """Load required environment variables for Splunk connection."""
-    required_vars = ['SPLUNK_HOST', 'SPLUNK_USERNAME', 'SPLUNK_PASSWORD']
+    required_vars = ['SPLUNK_HOST', 'SPLUNK_USERNAME', 'SPLUNK_PASSWORD', 'SPLUNK_HEC_TOKEN']
     env_vars = {}
     
     for var in required_vars:
@@ -84,7 +84,8 @@ def test_detection(detection_manager, detection_data, file_name, file_path,
                 file_path=str(data_file_path),
                 source=source,
                 sourcetype=sourcetype,
-                host=detection_manager.conn.host  # Use the Splunk host
+                splunk_host=detection_manager.conn.host,  # Use the Splunk host
+                event_host="test"  # Host field that appears in Splunk events
             )
             print("✅ Attack data sent successfully")
             
@@ -135,6 +136,7 @@ Environment Variables Required:
   SPLUNK_HOST      - Splunk server hostname/IP
   SPLUNK_USERNAME  - Splunk username
   SPLUNK_PASSWORD  - Splunk password
+  SPLUNK_HEC_TOKEN - HTTP Event Collector token
 
 Example usage:
   python test_detections.py /path/to/detections/folder
@@ -146,9 +148,11 @@ Example usage:
   export SPLUNK_HOST="192.168.1.100"
   export SPLUNK_USERNAME="admin" 
   export SPLUNK_PASSWORD="password"
+  export SPLUNK_HEC_TOKEN="your-actual-hec-token"
   
 Note: Attack data is automatically sent and cleaned up for each detection.
       Use --no-cleanup to preserve test data in Splunk for analysis.
+      HEC token must be configured in Splunk beforehand.
         """
     )
     
@@ -175,13 +179,11 @@ Note: Attack data is automatically sent and cleaned up for each detection.
         detection_manager = DetectionTestingManager(
             host=env_vars['host'],
             username=env_vars['username'],
-            password=env_vars['password']
+            password=env_vars['password'],
+            hec_token=env_vars['hec_token']
         )
         
-        # Configure HEC
-        print("Configuring HTTP Event Collector...")
-        detection_manager.configure_hec()
-        print("HEC configured successfully")
+        print("DetectionTestingManager initialized with predefined HEC configuration")
         
         # Find YAML files
         print(f"\nSearching for YAML files in: {args.folder_path}")
