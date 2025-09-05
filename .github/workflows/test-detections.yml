@@ -38,6 +38,7 @@ jobs:
         SPLUNK_HOST: ${{ secrets.SPLUNK_HOST }}
         SPLUNK_USERNAME: ${{ secrets.SPLUNK_USERNAME }}
         SPLUNK_PASSWORD: ${{ secrets.SPLUNK_PASSWORD }}
+        SPLUNK_HEC_TOKEN: ${{ secrets.SPLUNK_HEC_TOKEN }}
       run: |
         # Check if Splunk environment variables are set
         if [ -z "$SPLUNK_HOST" ] || [ -z "$SPLUNK_USERNAME" ] || [ -z "$SPLUNK_PASSWORD" ]; then
